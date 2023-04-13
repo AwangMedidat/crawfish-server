@@ -10,8 +10,8 @@ app.get("/update-sensor", (req, res) => {
 });
 
 app.post("/update-sensor", (req, res) => {
-  const data = req.body;
-  console.log(data);
+  const { temperature, ph, ppm, buzzer_state } = req.body;
+  console.log(req.body, '>>>> HASIL IOT');
 
   res.status(201).send(data);
 });
