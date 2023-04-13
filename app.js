@@ -13,7 +13,7 @@ app.post("/update-sensor", (req, res) => {
   const { temperature, ph, ppm, buzzer_state } = req.body;
   console.log(req.body, '>>>> HASIL IOT');
 
-  res.status(201).send(data);
+  res.status(201).send(req.body);
 });
 
 app.listen(port, () => {
