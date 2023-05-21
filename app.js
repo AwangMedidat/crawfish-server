@@ -114,10 +114,10 @@ app.post("/update-sensor", (req, res) => {
     return res.json({ Status: "Success", data });
   });
 
-  dataSensor.temperature = req.body.temperature;
-  dataSensor.ppm = req.body.ppm;
-  dataSensor.ph = req.body.ph;
-  dataSensor.buzzer_state = req.body.buzzer_state;
+  dataSensor.temperature = +req.body.temperature;
+  dataSensor.ppm = +req.body.ppm;
+  dataSensor.ph = +req.body.ph;
+  dataSensor.buzzer_state = +req.body.buzzer_state;
   io.emit("sensor data", dataSensor);
   // res.status(201).send(req.body);
 });
@@ -138,6 +138,7 @@ app.post("/signin", (req, res) => {
   const sql = "SELECT * FROM user WHERE email = ?";
 
   db.query(sql, [req.body.email], (err, data) => {
+    console.log(err, "<<< error");
     if (err) return res.json({ Error: "Login Error in server" });
     if (data.length > 0) {
       bcrypt.compare(
