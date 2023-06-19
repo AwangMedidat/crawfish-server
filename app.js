@@ -75,51 +75,63 @@ app.get("/logout", (req, res) => {
   return res.json({ Status: "Success" });
 });
 
-app.get("/update-sensor", (req, res) => {
-  res.status(200).send("KITA COBA");
+app.post("/post-sensor", (req, res) => {
+  const { temperature, ph, ppm, kolam_id } = req.body;
+
+  const sql =
+    "INSERT INTO sensor (`temperature`,`ph`,`ppm`,`kolam_id`) VALUES (?)";
+  const values = [+temperature, +ph, +ppm, +kolam_id];
+  db.query(sql, [values], (err, result) => {
+    // if (err) return res.json({ Error: "Inserting data Error in server" });
+    return res.json({ Status: "Success Post Sensor", data: result, err: err });
+  });
+
+  // console.log(hasil, "ini hasil query");
+
+  // res.status(201).send(req.body);
 });
 
 app.post("/update-sensor", (req, res) => {
-  const { temperature, ph, ppm, buzzer_state } = req.body;
   // console.log(req.body, '>>>> HASIL IOT');
   // console.log(req.headers);
-  const sql1 = "SELECT * FROM sensor WHERE kolam_id = ?";
-  db.query(sql1, [+req.body.kolam_id], (err, data) => {
-    if (err) return res.json({ Error: "Search Kolam Error in server" });
-    if (data.length > 0) {
-      const sql =
-        "UPDATE sensor SET `temperature`=?, `ph`=?, `ppm`=? WHERE kolam_id = ?";
-      db.query(
-        sql,
-        [req.body.temperature, req.body.ph, req.body.ppm, req.body.kolam_id],
-        (err, result) => {
-          if (err) return res.json({ Error: "Updating data Error in server" });
-          // return res.json({ Status: "Success" });
-        }
-      );
-    } else {
-      const sql =
-        "INSERT INTO sensor (`temperature`,`ph`,`ppm`,`kolam_id`) VALUES (?)";
-      const values = [
-        +req.body.temperature,
-        +req.body.ph,
-        +req.body.ppm,
-        +req.body.kolam_id,
-      ];
-      db.query(sql, [values], (err, result) => {
-        if (err) return res.json({ Error: "Inserting data Error in server" });
-        // return res.json({ Status: "Success" });
-      });
-    }
-    return res.json({ Status: "Success", data });
-  });
+  // const sql1 = "SELECT * FROM sensor WHERE kolam_id = ?";
+  // db.query(sql1, [+req.body.kolam_id], (err, data) => {
+  //   if (err) return res.json({ Error: "Search Kolam Error in server" });
+  //   if (data.length > 0) {
+  //     const sql =
+  //       "UPDATE sensor SET `temperature`=?, `ph`=?, `ppm`=? WHERE kolam_id = ?";
+  //     db.query(
+  //       sql,
+  //       [req.body.temperature, req.body.ph, req.body.ppm, req.body.kolam_id],
+  //       (err, result) => {
+  //         if (err) return res.json({ Error: "Updating data Error in server" });
+  //         // return res.json({ Status: "Success" });
+  //       }
+  //     );
+  //   } else {
+  //     const sql =
+  //       "INSERT INTO sensor (`temperature`,`ph`,`ppm`,`kolam_id`) VALUES (?)";
+  //     const values = [
+  //       +req.body.temperature,
+  //       +req.body.ph,
+  //       +req.body.ppm,
+  //       +req.body.kolam_id,
+  //     ];
+  //     db.query(sql, [values], (err, result) => {
+  //       if (err) return res.json({ Error: "Inserting data Error in server" });
+  //       // return res.json({ Status: "Success" });
+  //     });
+  //   }
+  //   return res.json({ Status: "Success", data });
+  // });
 
   dataSensor.temperature = +req.body.temperature;
   dataSensor.ppm = +req.body.ppm;
   dataSensor.ph = +req.body.ph;
   dataSensor.buzzer_state = +req.body.buzzer_state;
   io.emit("sensor data", dataSensor);
-  // res.status(201).send(req.body);
+  console.log("sudah terkirim");
+  res.status(201).send(req.body);
 });
 
 app.post("/signup", (req, res) => {
@@ -199,8 +211,17 @@ app.get("/kolamId/:id", (req, res) => {
   });
 });
 
+app.get("/history/:kolamId", (req, res) => {
+  const sql = "SELECT * FROM sensor WHERE kolam_id = ? ORDER BY id DESC";
+
+  db.query(sql, [+req.params.kolamId], (err, data) => {
+    if (err) return res.json({ Error: "History Kolam Error in server" });
+    return res.json({ Status: "Success", data });
+  });
+});
+
 io.on("connection", (socket) => {
-  console.log("a user connected");
+  console.log("a user connected !");
   socket.on("disconnect", () => {
     console.log("user disconnected");
   });
