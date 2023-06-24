@@ -11,6 +11,9 @@ const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
 const salt = 10;
 const port = 8008;
+const XLSX = require("xlsx");
+const path = require("path");
+const fs = require("fs");
 let dataSensor = {
   temperature: "",
   ph: "",
@@ -219,7 +222,10 @@ app.post("/download/history/:kolamId", (req, res) => {
     "SELECT * FROM sensor WHERE kolam_id = ? AND DATE(created_at) = ?";
 
   db.query(sql, [+req.params.kolamId, req.body.date], (err, data) => {
-    // if (err) return res.json({ Error: "History Kolam Error in server" });
+    if (err) {
+      // console.error(err);
+      return res.status(500).json({ error: "Failed to fetch sensor data." });
+    }
 
     // const test = data.map((item) => [
     //   item.id,
@@ -231,45 +237,38 @@ app.post("/download/history/:kolamId", (req, res) => {
     // ]);
     // console.log(test, "<<<");
 
-    // const workbook = XLSX.utils.book_new();
-    // const worksheet = XLSX.utils.aoa_to_sheet([
-    //   ["ID", "Temperature", "pH", "PPM", "Kolam ID", "Tanggal"],
-    //   ...data.map((item) => [
-    //     item.id,
-    //     item.temperature,
-    //     item.ph,
-    //     item.ppm,
-    //     item.kolam_id,
-    //     convertToGoodDate(item.created_at),
-    //   ]),
-    // ]);
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      ["Suhu", "pH", "ppm", "Kolam ID", "Tanggal"],
+      ...data.map((item) => [
+        item.temperature,
+        item.ph,
+        item.ppm,
+        item.kolam_id,
+        convertToGoodDate(item.created_at),
+      ]),
+    ]);
 
-    // // Add the worksheet to the workbook
-    // XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet 1");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet 1");
 
-    // // Convert the workbook to a buffer
-    // const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    // Convert the workbook to a buffer
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
-    // // Define the file name and file path
-    // const fileName = "data.xlsx";
-    // const filePath = path.join(__dirname, "Downloads", fileName);
+    // Set the response headers for file download
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="data-kolam-${+req.params.kolamId} ${
+        req.body.date
+      }.xlsx"`
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
 
-    // // Write the buffer to the file
-    // fs.writeFileSync(filePath, buffer);
-
-    // // Set the response headers for file download
-    // res.setHeader(
-    //   "Content-Disposition",
-    //   'attachment; filename="data-kolam-1.xlsx"'
-    // );
-    // res.setHeader(
-    //   "Content-Type",
-    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    // );
-
-    // // Send the file as the response
-    // res.sendFile(filePath);
-    return res.json({ Status: "Success", data });
+    // Send the file as the response
+    // console.log(buffer);
+    return res.send(buffer);
   });
 });
 
