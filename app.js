@@ -78,53 +78,32 @@ app.get("/logout", (req, res) => {
 app.post("/post-sensor", (req, res) => {
   const { temperature, ph, ppm, kolam_id } = req.body;
 
-  const sql =
-    "INSERT INTO sensor (`temperature`,`ph`,`ppm`,`kolam_id`) VALUES (?)";
-  const values = [+temperature, +ph, +ppm, +kolam_id];
-  db.query(sql, [values], (err, result) => {
-    // if (err) return res.json({ Error: "Inserting data Error in server" });
-    return res.json({ Status: "Success Post Sensor", data: result, err: err });
+  const sql1 = "SELECT * FROM sensor ORDER BY kolam_id = ? DESC LIMIT 1";
+
+  db.query(sql1, [kolam_id], (err, data) => {
+    if (
+      temperature !== data[0].temperature ||
+      ph !== data[0].ph ||
+      ppm !== data[0].ppm
+    ) {
+      const sql =
+        "INSERT INTO sensor (`temperature`,`ph`,`ppm`,`kolam_id`) VALUES (?)";
+      const values = [+temperature, +ph, +ppm, +kolam_id];
+      db.query(sql, [values], (err, result) => {
+        // if (err) return res.json({ Error: "Inserting data Error in server" });
+        return res.json({
+          Status: "Success Post Sensor",
+          data: result,
+          err: err,
+        });
+      });
+    } else {
+      console.log("TIDAK MASUK DB");
+    }
   });
-
-  // console.log(hasil, "ini hasil query");
-
-  // res.status(201).send(req.body);
 });
 
 app.post("/update-sensor", (req, res) => {
-  // console.log(req.body, '>>>> HASIL IOT');
-  // console.log(req.headers);
-  // const sql1 = "SELECT * FROM sensor WHERE kolam_id = ?";
-  // db.query(sql1, [+req.body.kolam_id], (err, data) => {
-  //   if (err) return res.json({ Error: "Search Kolam Error in server" });
-  //   if (data.length > 0) {
-  //     const sql =
-  //       "UPDATE sensor SET `temperature`=?, `ph`=?, `ppm`=? WHERE kolam_id = ?";
-  //     db.query(
-  //       sql,
-  //       [req.body.temperature, req.body.ph, req.body.ppm, req.body.kolam_id],
-  //       (err, result) => {
-  //         if (err) return res.json({ Error: "Updating data Error in server" });
-  //         // return res.json({ Status: "Success" });
-  //       }
-  //     );
-  //   } else {
-  //     const sql =
-  //       "INSERT INTO sensor (`temperature`,`ph`,`ppm`,`kolam_id`) VALUES (?)";
-  //     const values = [
-  //       +req.body.temperature,
-  //       +req.body.ph,
-  //       +req.body.ppm,
-  //       +req.body.kolam_id,
-  //     ];
-  //     db.query(sql, [values], (err, result) => {
-  //       if (err) return res.json({ Error: "Inserting data Error in server" });
-  //       // return res.json({ Status: "Success" });
-  //     });
-  //   }
-  //   return res.json({ Status: "Success", data });
-  // });
-
   dataSensor.temperature = +req.body.temperature;
   dataSensor.ppm = +req.body.ppm;
   dataSensor.ph = +req.body.ph;
@@ -216,6 +195,80 @@ app.get("/history/:kolamId", (req, res) => {
 
   db.query(sql, [+req.params.kolamId], (err, data) => {
     if (err) return res.json({ Error: "History Kolam Error in server" });
+    return res.json({ Status: "Success", data });
+  });
+});
+
+app.post("/download/history/:kolamId", (req, res) => {
+  const convertToGoodDate = (dateSensor) => {
+    const date = new Date(dateSensor);
+    const options = {
+      weekday: "long",
+      day: "numeric",
+      month: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+    };
+    const formattedDate = date.toLocaleString("id-ID", options);
+    return formattedDate;
+  };
+  // console.log(req.body.date);
+  const sql =
+    "SELECT * FROM sensor WHERE kolam_id = ? AND DATE(created_at) = ?";
+
+  db.query(sql, [+req.params.kolamId, req.body.date], (err, data) => {
+    // if (err) return res.json({ Error: "History Kolam Error in server" });
+
+    // const test = data.map((item) => [
+    //   item.id,
+    //   item.temperature,
+    //   item.ph,
+    //   item.ppm,
+    //   item.kolam_id,
+    //   convertToGoodDate(item.created_at),
+    // ]);
+    // console.log(test, "<<<");
+
+    // const workbook = XLSX.utils.book_new();
+    // const worksheet = XLSX.utils.aoa_to_sheet([
+    //   ["ID", "Temperature", "pH", "PPM", "Kolam ID", "Tanggal"],
+    //   ...data.map((item) => [
+    //     item.id,
+    //     item.temperature,
+    //     item.ph,
+    //     item.ppm,
+    //     item.kolam_id,
+    //     convertToGoodDate(item.created_at),
+    //   ]),
+    // ]);
+
+    // // Add the worksheet to the workbook
+    // XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet 1");
+
+    // // Convert the workbook to a buffer
+    // const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    // // Define the file name and file path
+    // const fileName = "data.xlsx";
+    // const filePath = path.join(__dirname, "Downloads", fileName);
+
+    // // Write the buffer to the file
+    // fs.writeFileSync(filePath, buffer);
+
+    // // Set the response headers for file download
+    // res.setHeader(
+    //   "Content-Disposition",
+    //   'attachment; filename="data-kolam-1.xlsx"'
+    // );
+    // res.setHeader(
+    //   "Content-Type",
+    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    // );
+
+    // // Send the file as the response
+    // res.sendFile(filePath);
     return res.json({ Status: "Success", data });
   });
 });
